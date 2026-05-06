@@ -20,6 +20,10 @@ class RegisterResponse(BaseModel):
 
 
 class AuthRequest(BaseModel):
+    email: str
+    name: str
+    rollNo: str
+    accessCode: str
     clientID: str
     clientSecret: str
 

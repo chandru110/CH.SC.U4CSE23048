@@ -26,6 +26,7 @@ async def get_client() -> httpx.AsyncClient:
             _client = httpx.AsyncClient(
                 base_url=settings.eval_base_url,
                 timeout=httpx.Timeout(20.0),
+                verify=settings.eval_verify_ssl,
                 headers={"Content-Type": "application/json"},
             )
         return _client

@@ -101,7 +101,8 @@ async def register_if_needed() -> None:
                 base_url=settings.eval_base_url,
                 timeout=httpx.Timeout(20.0),
                 headers={"Accept": "application/json"},
-                follow_redirects=True,
+                follow_redirects=False,
+                verify=settings.eval_verify_ssl,
             ) as client:
                 resp = await client.post(EVAL_PATHS.register, json=payload)
                 if resp.status_code == 409:
@@ -134,6 +135,13 @@ async def register_if_needed() -> None:
                     except Exception:
                         data = None
                 else:
+                    if 300 <= resp.status_code < 400:
+                        await Log(
+                            "backend",
+                            "warn",
+                            "auth",
+                            f"Registration redirect: {resp.status_code} location={resp.headers.get('location')!r}",
+                        )
                     if resp.status_code >= 400:
                         body_preview = (resp.text or "").strip()
                         if len(body_preview) > 500:
@@ -218,43 +226,68 @@ async def authenticate() -> str:
             f"Requesting access token (clientID=***{client_id[-4:] if client_id else 'none'}).",
         )
 
-        # Some evaluation-service deployments expect `clientID` while others expect `clientId`.
-        # We attempt both to be resilient.
+        # The evaluation-service /auth endpoint requires registration fields
+        # alongside client credentials. We attempt both `clientID` and `clientId`
+        # key variants to be resilient.
         payload_variants = [
-            AuthRequest(clientID=client_id, clientSecret=client_secret).dict(
-                by_alias=True
-            ),
-            {"clientId": client_id, "clientSecret": client_secret},
+            AuthRequest(
+                email=settings.affordmed_email,
+                name=settings.affordmed_name,
+                rollNo=settings.affordmed_roll_no,
+                accessCode=settings.affordmed_access_code,
+                clientID=client_id,
+                clientSecret=client_secret,
+            ).dict(by_alias=True),
+            {
+                "email": settings.affordmed_email,
+                "name": settings.affordmed_name,
+                "rollNo": settings.affordmed_roll_no,
+                "accessCode": settings.affordmed_access_code,
+                "clientId": client_id,
+                "clientSecret": client_secret,
+            },
         ]
+
+        auth_paths = [EVAL_PATHS.auth, f"{EVAL_PATHS.auth}/"]
 
         last_error: Exception | None = None
         data = None
-        for attempt, payload in enumerate(payload_variants, start=1):
-            try:
-                async with httpx.AsyncClient(
-                    base_url=settings.eval_base_url,
-                    timeout=httpx.Timeout(20.0),
-                    headers={"Accept": "application/json"},
-                    follow_redirects=True,
-                ) as client:
-                    resp = await client.post(EVAL_PATHS.auth, json=payload)
-                    if resp.status_code >= 400:
-                        # Log server-provided details to help debug 403/401.
-                        body_preview = (resp.text or "").strip()
-                        if len(body_preview) > 500:
-                            body_preview = body_preview[:500] + "..."
-                        await Log(
-                            "backend",
-                            "error",
-                            "auth",
-                            f"Auth attempt {attempt} failed: {resp.status_code} body={body_preview!r}",
-                        )
-                        resp.raise_for_status()
-                    data = resp.json()
-                    break
-            except Exception as exc:  # noqa: BLE001
-                last_error = exc
-                continue
+        attempt_no = 0
+        for path in auth_paths:
+            for payload in payload_variants:
+                attempt_no += 1
+                try:
+                    async with httpx.AsyncClient(
+                        base_url=settings.eval_base_url,
+                        timeout=httpx.Timeout(20.0),
+                        headers={"Accept": "application/json"},
+                        follow_redirects=False,
+                        verify=settings.eval_verify_ssl,
+                    ) as client:
+                        resp = await client.post(path, json=payload)
+                        if resp.status_code >= 300:
+                            # Log server-provided details to help debug 403/401/404.
+                            body_preview = (resp.text or "").strip()
+                            if len(body_preview) > 500:
+                                body_preview = body_preview[:500] + "..."
+                            await Log(
+                                "backend",
+                                "error",
+                                "auth",
+                                f"Auth attempt {attempt_no} failed: {resp.status_code} path={path} "
+                                f"location={resp.headers.get('location')!r} body={body_preview!r}",
+                            )
+                            resp.raise_for_status()
+                        content_type = resp.headers.get("content-type", "")
+                        if "application/json" not in content_type.lower():
+                            raise ValueError(f"Auth response not JSON (content-type={content_type!r})")
+                        data = resp.json()
+                        break
+                except Exception as exc:  # noqa: BLE001
+                    last_error = exc
+                    continue
+            if data is not None:
+                break
 
         if data is None:
             await Log(

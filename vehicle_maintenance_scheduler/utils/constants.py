@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     """
 
     eval_base_url: str = Field(default="http://20.207.122.201", env="EVAL_BASE_URL")
+    eval_verify_ssl: bool = Field(default=True, env="EVAL_VERIFY_SSL")
 
     affordmed_email: str = Field(env="AFFORDMED_EMAIL")
     affordmed_name: str = Field(env="AFFORDMED_NAME")
