@@ -160,3 +160,26 @@ __pycache__
 - This project is designed to be runnable via `uvicorn main:app --reload`.
 - Ensure `.env` contains all required variables before startup.
 - The schedule endpoint uses a dynamic programming solution to maximize impact within depot mechanic hour constraints.
+
+- ## Output
+- uvicorn main:app --reload
+INFO:     Will watch for changes in these directories: ['D:\\CH.SC.U4CSE23048\\vehicle_maintenance_scheduler']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [22080] using StatReload
+INFO:     Started server process [12176]
+INFO:     Waiting for application startup.
+2026-05-06 15:52:17,815 INFO vehicle_maintenance_scheduler - [backend/info/middleware] Application starting up.
+2026-05-06 15:52:17,815 INFO vehicle_maintenance_scheduler - [backend/info/auth] Loaded client credentials from environment.
+2026-05-06 15:52:17,815 INFO vehicle_maintenance_scheduler - [backend/info/auth] Requesting access token (clientID=***7a5d).
+2026-05-06 15:52:18,392 INFO httpx - HTTP Request: POST http://20.207.122.201/evaluation-service/auth "HTTP/1.1 400 Bad Request"
+2026-05-06 15:52:18,395 INFO vehicle_maintenance_scheduler - [backend/error/auth] Auth attempt 1 failed: 400 path=/evaluation-service/auth location=None body='{"errors":[{"email":"is required"},{"name":"is required"},{"rollNo":"is required"},{"accessCode":"is required"}]}'
+2026-05-06 15:52:18,887 INFO httpx - HTTP Request: POST http://20.207.122.201/evaluation-service/auth "HTTP/1.1 400 Bad Request"
+2026-05-06 15:52:18,893 INFO vehicle_maintenance_scheduler - [backend/error/auth] Auth attempt 2 failed: 400 path=/evaluation-service/auth location=None body='{"errors":[{"email":"is required"},{"name":"is required"},{"rollNo":"is required"},{"accessCode":"is required"}]}'
+2026-05-06 15:52:19,376 INFO httpx - HTTP Request: POST http://20.207.122.201/evaluation-service/auth "HTTP/1.1 201 Created"
+2026-05-06 15:52:19,380 INFO vehicle_maintenance_scheduler - [backend/info/auth] Authentication successful; bearer token stored in-memory.
+2026-05-06 15:52:19,886 INFO httpx - HTTP Request: POST http://20.207.122.201/evaluation-service/logs "HTTP/1.1 400 Bad Request"
+2026-05-06 15:52:19,901 WARNING vehicle_maintenance_scheduler - External log failed: Client error '400 Bad Request' for url 'http://20.207.122.201/evaluation-service/logs'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+2026-05-06 15:52:19,901 INFO vehicle_maintenance_scheduler - [backend/info/middleware] Startup success: registered + authenticated.
+2026-05-06 15:52:19,975 INFO httpx - HTTP Request: POST http://20.207.122.201/evaluation-service/logs "HTTP/1.1 201 Created"
+INFO:     Application startup complete.
