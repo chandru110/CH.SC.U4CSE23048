@@ -22,6 +22,8 @@ class RegisterResponse(BaseModel):
 class AuthRequest(BaseModel):
     email: str
     name: str
+    mobileNo: str
+    githubUsername: str
     rollNo: str
     accessCode: str
     clientID: str

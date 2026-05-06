@@ -226,13 +226,16 @@ async def authenticate() -> str:
             f"Requesting access token (clientID=***{client_id[-4:] if client_id else 'none'}).",
         )
 
-        # The evaluation-service /auth endpoint requires registration fields
-        # alongside client credentials. We attempt both `clientID` and `clientId`
-        # key variants to be resilient.
+        # Per assessment spec, `/auth` expects only client credentials.
+        # Some deployments additionally validate identity fields; we try both.
         payload_variants = [
+            {"clientID": client_id, "clientSecret": client_secret},
+            {"clientId": client_id, "clientSecret": client_secret},
             AuthRequest(
                 email=settings.affordmed_email,
                 name=settings.affordmed_name,
+                mobileNo=settings.affordmed_mobile_no,
+                githubUsername=settings.affordmed_github_username,
                 rollNo=settings.affordmed_roll_no,
                 accessCode=settings.affordmed_access_code,
                 clientID=client_id,
@@ -241,6 +244,8 @@ async def authenticate() -> str:
             {
                 "email": settings.affordmed_email,
                 "name": settings.affordmed_name,
+                "mobileNo": settings.affordmed_mobile_no,
+                "githubUsername": settings.affordmed_github_username,
                 "rollNo": settings.affordmed_roll_no,
                 "accessCode": settings.affordmed_access_code,
                 "clientId": client_id,
@@ -248,7 +253,8 @@ async def authenticate() -> str:
             },
         ]
 
-        auth_paths = [EVAL_PATHS.auth, f"{EVAL_PATHS.auth}/"]
+        # Prefer the documented endpoint; avoid trailing slash (some proxies redirect oddly).
+        auth_paths = [EVAL_PATHS.auth]
 
         last_error: Exception | None = None
         data = None
